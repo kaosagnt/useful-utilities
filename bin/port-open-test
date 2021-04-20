@@ -1,0 +1,118 @@
+#!/bin/sh
+
+# %BEGIN_COPYRIGHT%
+# 
+# Copyright Ian McWilliam (kaosagnt@gmail.com).
+#
+# Permission to use, copy, modify, and distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+#
+# %END_COPYRIGHT%
+
+#set -vx
+
+# Test a host for Open TCP / UDP port.
+
+# Debug output off by default.
+# Enable with:
+# env DEBUG=1 port-open-test hostname
+DEBUG=${DEBUG-0}
+
+usage() {
+    printf "%s\n%s\n%s\n%s\n%s\n\n" \
+            "usage: ${0##*/} hostname port" \
+            "hostname: IP address or DNS name of host to test." \
+			"port: port number." \
+			"To enable debug output: " \
+			"env DEBUG=1 usage: ${0##*/} hostname port"
+    exit 1
+}
+
+print_debug() {
+	printf "\n\nCONNECTION:\n%s\n\n" \
+			"${CONNECTION}"
+}
+
+[ $# -gt 2  ] && usage
+[ -n "${1}" ] || usage
+[ -n "${2}" ] || usage
+
+NMAP="nmap"
+NMAP_PATH=$(which "${NMAP}")
+
+if [ X"${NMAP_PATH}" == X"" ]; then
+
+	printf "%s %s\n%s\n\n" \
+			"Unable to find command:" \
+			"${NMAP}" \
+			"Please install before trying again."
+	exit 1;
+fi
+
+HOST=${1}
+
+CONNECTION=$(sudo ${NMAP_PATH} "${HOST}" -p "${2}" -sU -sS \
+			--script memcached-info)
+
+if grep -Eq 'Host is up' <<< "${CONNECTION}"; then
+
+	TCP_STATE=$(grep -E 'tcp.*(open|closed|filtered)' <<< "${CONNECTION}")
+	UDP_STATE=$(grep -E 'udp.*(open|closed|filtered)' <<< "${CONNECTION}")
+
+	printf "%s\n%s\n\n" \
+			"TCP State ${2}: ${TCP_STATE}" \
+			"UDP State ${2}: ${UDP_STATE}"
+
+	printf "Nmap filtered: %s %s %s\n\n" \
+			"means that a firewall, filter, or other network obstacle" \
+			"is blocking the port so that Nmap cannot tell whether it is" \
+			"open or closed. Further investigation will be required." \
+
+else
+	printf "Unable to connect to %s\n" \
+			"${HOST}:${2}"
+fi
+
+[ ${DEBUG} -eq 1 ] && print_debug
+
+# Examples
+
+# Starting Nmap 6.40 ( http://nmap.org ) at 2021-04-15 15:28 AEST
+# Nmap scan report for localhost (127.0.0.1)
+# Host is up (0.000081s latency).
+# rDNS record for 127.0.0.1: localhost.localdomain
+# PORT      STATE  SERVICE
+# 11211/tcp open   unknown
+# | memcached-info: 
+# |   Process ID           960
+# |   Uptime               778 seconds
+# |   Server time          2021-04-15T05:28:42
+# |   Architecture         64 bit
+# |   Used CPU (user)      0.081224
+# |   Used CPU (system)    0.125766
+# |   Current connections  1
+# |   Total connections    4
+# |   Maximum connections  4096
+# |   TCP Port             11211
+# |   UDP Port             0
+# |_  Authentication       no
+# 11211/udp closed unknown
+#
+# Nmap done: 1 IP address (1 host up) scanned in 0.47 seconds
+
+# Starting Nmap 6.40 ( http://nmap.org ) at 2021-04-18 15:33 AEST
+# Nmap scan report for XXX.XXX.XXX.XXX (XXX.X.XX.XX)
+# Host is up (0.00021s latency).
+# rDNS record for XX.X.XX.XX: XXX.XXX.XXX.XXX
+# PORT      STATE         SERVICE
+# 11211/tcp filtered      unknown
+# 11211/udp open|filtered unknown

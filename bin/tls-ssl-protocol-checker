@@ -1,0 +1,120 @@
+#!/bin/bash
+
+# %BEGIN_COPYRIGHT%
+# 
+# Copyright Ian McWilliam (kaosagnt@gmail.com).
+#
+# Permission to use, copy, modify, and distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+#
+# %END_COPYRIGHT%
+
+# Debug output off by default.
+# Enable with:
+# env DEBUG=1 tls-ssl-protocol-checker hostname
+DEBUG=${DEBUG-0}
+
+usage() {
+	printf "%s\n%s\n%s\n\n" \
+		"usage: ${0##*/} <hostname or IP_address> [port]" \
+		"To enable debug output: " \
+		"env DEBUG=1 ${0##*/} <hostname or IP_address> [port]"
+	exit 1
+}
+
+print_debug() {
+	printf "\nSTDOUT:\n%s\n\n" \
+			"${STD_OUT}"
+	printf "STDERR:\n%s\n\n" \
+			"${STD_ERR}"
+}
+
+print_results() {
+
+	local _unknown_option="${1}"
+	local _connect="${2}"
+	local _protocol_display="${3}"
+
+	if grep -Eq 'unknown option' <<< "${_unknown_option}"; then
+		# openssl client unknown option.
+		# Unable to test.
+		printf "%s. %s %s\n" \
+				"unknown option" \
+				"Your OpenSSL client does not support" \
+				"${_protocol_display}."
+
+	else
+		if grep -Eq 'Protocol.*(SSLv|TLSv1)' <<< "${_connect}"; then
+
+			if grep -Eq 'Cipher.*0000' <<< "${_connect}"; then
+				printf "%s disabled\n"
+			else
+				printf "%s enabled\n"
+			fi
+		else
+
+			printf "Unable to connect to %s\n" \
+					"${HOST}"
+		fi
+	fi
+}
+
+[ $# -gt 2 ] && usage
+[ -n "${1}" ] || usage
+
+printf "\n"
+
+#HOST="${1-`hostname`}"
+HOST="${1}"
+
+#RET=$(echo Q | timeout 5 openssl s_client \
+#	-connect "${HOST}:${2-443}" \
+#	-tls1.1 2> /dev/null)
+
+# SSL-Session:
+#	Protocol  : TLSv1.1
+#	Cipher    : 0000
+
+# SSL-Session:
+#	Protocol  : TLSv1.1
+#	Cipher    : ECDHE-RSA-AES256-SHA
+
+PROTOCOL_DISPAY=("SSlv3"
+	"TLSv1.0"
+	"TLSv1.1"
+	"TLSv1.2"
+	"TLSv1.3"
+)
+
+OPENSSL_FLAGS=("-ssl3"
+	"-tls1"
+	"-tls1_1"
+	"-tls1_2"
+	"-tls1_3"
+)
+
+# Test all protocols
+for (( TEST=0; TEST <= 4; TEST++ )); do
+
+	{
+		IFS=$'\n' read -r -d '' STD_ERR;
+		IFS=$'\n' read -r -d '' STD_OUT;
+	} < <((printf '\0%s\0' "$(echo Q | timeout 5 openssl s_client -connect ${HOST}:${2-443} ${OPENSSL_FLAGS[${TEST}]})" 1>&2) 2>&1)
+
+	printf "%s: " \
+		"${PROTOCOL_DISPAY[$TEST]} (${OPENSSL_FLAGS[${TEST}]})"
+
+	print_results "${STD_ERR}" "${STD_OUT}" "${PROTOCOL_DISPAY[$TEST]}"
+
+	[ ${DEBUG} -eq 1 ] && print_debug
+
+done

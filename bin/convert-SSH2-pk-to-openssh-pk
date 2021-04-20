@@ -1,0 +1,44 @@
+#!/bin/sh
+
+# %BEGIN_COPYRIGHT%
+# 
+# Copyright Ian McWilliam (kaosagnt@gmail.com).
+#
+# Permission to use, copy, modify, and distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+#
+# %END_COPYRIGHT%
+
+# Converts SSH2 (PuTTY) key files to OpenSSH format.
+
+usage() {
+	printf "%s\n%s %s\n\n" \
+			"usage: ${0##*/} SSH2_pk_file" \
+			"SSH2_pk_file - name of the SSH2 Public Key" \
+			"file to convert to OpenSSH format."
+	exit 1
+}
+
+[ $# -ne 2 ] || usage
+[ -n "${1}" ] || usage
+
+if [ -f "${1}" ]; then
+
+	# SSH2 tp OpenSSH
+	ssh-keygen -i -f "${1}"
+
+	printf "Converstion complete.\n"
+else
+
+	printf "Uable to find the SSH2 Public Key file: ${1}\n\n"
+	exit 1
+fi

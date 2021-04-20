@@ -1,0 +1,92 @@
+#!/bin/sh
+
+# %BEGIN_COPYRIGHT%
+# 
+# Copyright Ian McWilliam (kaosagnt@gmail.com).
+#
+# Permission to use, copy, modify, and distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+#
+# %END_COPYRIGHT%
+
+# Debug output off by default.
+# Enable with:
+# env DEBUG=1 ocsp-stapling-checker hostname
+DEBUG=${DEBUG-0}
+
+usage() {
+	printf "%s\n%s\n%s\n\n" \
+		"usage: ${0##*/} <hostname or IP_address> [port]" \
+		"To enable debug output: " \
+		"env DEBUG=1 ${0##*/} <hostname or IP_address> [port]"
+	exit 1
+}
+
+print_debug() {
+	printf "\n\nCONNECTION:\n%s\n\n" \
+			"${CONNECTION}"
+}
+
+[ $# -gt 2 ] && usage
+[ -n "${1}" ] || usage
+
+HOST="${1}"
+
+OCSP_FAIL="OCSP response: no response sent"
+
+printf "OCSP Stapling: "
+
+# Start OCSP scan...
+CONNECTION=$(openssl s_client -connect "${HOST}:${2-443}" -status \
+			-CApath /etc/pki/tls/ 2> /dev/null)
+
+if grep -Eq 'Protocol.*(SSLv|TLSv1)' <<< "${CONNECTION}"; then
+
+	if grep -q "${OCSP_FAIL}" <<< "${CONNECTION}"; then
+
+		printf "disabled\n"
+	else
+		printf "enabled\n"
+	fi
+
+else
+	printf "Unable to connect to %s\n" \
+			"${HOST}"
+fi
+
+[ ${DEBUG} -eq 1 ] && print_debug
+
+# Disabled response
+# CONNECTED(00000005)
+# OCSP response: no response sent
+
+# Enabled response
+# Example: outspokenmedia.com
+
+# CONNECTED(00000005)
+# OCSP response: 
+# ======================================
+# OCSP Response Data:
+#    OCSP Response Status: successful (0x0)
+#    Response Type: Basic OCSP Response
+#    Version: 1 (0x0)
+#    Responder Id: C = US, O = Let's Encrypt, CN = R3
+#    Produced At: Apr 10 06:36:00 2021 GMT
+#    Responses:
+#    Certificate ID:
+#      Hash Algorithm: sha1
+#      Issuer Name Hash: 48DAC9A0FB2BD32D4FF0DE68D2F567B735F9B3C4
+#      Issuer Key Hash: 142EB317B75856CBAE500940E61FAF9D8B14C2C6
+#      Serial Number: 037D34151029A230CD945B359CBA0BF4849D
+#    Cert Status: good
+#    This Update: Apr 10 06:00:00 2021 GMT
+#    Next Update: Apr 17 06:00:00 2021 GMT

@@ -1,0 +1,61 @@
+#!/bin/sh
+
+# %BEGIN_COPYRIGHT%
+# 
+# Copyright Ian McWilliam (kaosagnt@gmail.com).
+#
+# Permission to use, copy, modify, and distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+#
+# %END_COPYRIGHT%
+
+# Debug output off by default.
+# Enable with:
+# env DEBUG=1 remove_definer_from_sql_dump hostname
+DEBUG=${DEBUG-0}
+
+usage() {
+	printf "%s\n%s\n%s\n%s\n\n" \
+			"usage: ${0##*/} sql_file" \
+			"sql_file - name of the SQL file to remove definer from." \
+			"To enable debug output: " \
+			"env DEBUG=1 usage: ${0##*/} sql_file"
+	exit 1
+}
+
+print_debug() {
+	printf "OUT_FILE: %s\n" \
+			"${OUT_FILE}\n"
+	printf "OUT_FILE_EXT: %s\n\n" \ 
+			"${OUT_FILE_EXT}"
+}
+
+[ $# -gt 2 ] && usage
+[ -n "${1}" ] || usage
+
+#OUT_FILE=$(basename "${1}")
+OUT_FILE="${1}"
+OUT_FILE_EXT="${OUT_FILE##*.}"
+OUT_FILE="${OUT_FILE%.*}"
+OUT_FILE="${OUT_FILE}-removed-definers.${OUT_FILE_EXT}"
+
+[ ${DEBUG} -eq 1 ] && print_debug
+
+if [ -f "${1}" ]; then
+
+	sed -r -e 's/DEFINER=`.+`@`.+`\s//' < "${1}" > "${OUT_FILE}"
+
+else
+
+	printf "Uable to find file: ${1}\n\n"
+	exit 1
+fi

@@ -1,0 +1,83 @@
+#!/bin/sh
+# %BEGIN_COPYRIGHT%
+# Copyright Ian McWilliam (kaosagnt@gmail.com).
+# Permission to use, copy, modify, and distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF MIND, USE, DATA OR PROFITS, WHETHER
+# IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING
+# OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+# %END_COPYRIGHT%
+
+# Script to test Remote HTTPS SSL / TLS certificates expiration.
+# default: 14 days test period.
+
+# Debug output off by default.
+# Enable with:
+# env DEBUG=1 tls-check-cert-valid-remote hostname
+DEBUG=${DEBUG-0}
+
+usage() {
+	printf "%s\n%s\n%s\n%s\n\n" \
+		"usage: ${0##*/} <hostname or IP_address> [period]" \
+		"[period]: option period to test for in days. Default: 14 days." \
+		"To enable debug output: " \
+		"env DEBUG=1 ${0##*/} <hostname or IP_address>"
+	exit 1
+}
+
+print_debug() {
+	printf "\nPERIOD: %s\n" \
+			"${PERIOD}"
+	printf "DAYS: %s\n\n" \
+			"${DAYS}"
+}
+
+[ $# -gt 2 ] && usage
+[ -n "${1}" ] || usage
+
+REMOTE_HOST="${1}"
+
+# Default
+# 2 weeks (14 days) (1209600 seconds)
+# 60 x 60 x 24 x 14
+DAYS="${2-14}"
+
+if [ "${DAYS}" -eq "${DAYS}" ] 2>/dev/null; then
+	# We are a number
+	if [ ${DAYS} -le 0 ]; then
+			usage
+	else
+		PERIOD=$((86400 * ${DAYS}))
+	fi
+else
+	# We are a string
+	usage
+fi
+
+[ ${DEBUG} -eq 1 ] && print_debug
+
+printf "------- %s ------\n" \
+		"${REMOTE_HOST}"
+
+openssl s_client -showcerts -tls1_2 -connect "${REMOTE_HOST}:443" | openssl x509 -dates -checkend "${PERIOD}" -noout
+
+SUCCESS=$?
+
+if [ ${SUCCESS} -eq 0 ]; then
+
+    printf "\n%s\n\n" \
+    	"Certificate is valid within the next ${DAYS} days test period or longer."
+
+else
+
+    printf "\n%s\n\n" \
+    	"Certificate has expired or will expire within the next ${DAYS} days."
+
+    exit 1
+fi
