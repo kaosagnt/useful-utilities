@@ -4,7 +4,7 @@ Useful Un*x / macOS utilities
 A store of useful utilities that run under a Un*x like OS ie Linux / macOS / BSD.
 There will be some macOS specific ones as I find time to clean them up and add to the repository.
 
-These are some tools I use on a daily basis, some within cron scrips or setup with automation tools Like [Rundeck](rundeck.org).
+These are some tools I use on a daily basis, some within cron scrips or setup with automation tools Like [Rundeck](https://rundeck.org).
 
 To use effectively, place the bin/ directory in your path.
 Most of the utilities will display debugging information by prepending the following the to command line:
