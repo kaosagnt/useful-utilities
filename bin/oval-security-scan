@@ -1,0 +1,197 @@
+#!/bin/sh
+
+# %BEGIN_COPYRIGHT%
+#
+# Copyright Ian McWilliam (kaosagnt@gmail.com).
+#
+# Permission to use, copy, modify, and distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+#
+# %END_COPYRIGHT%
+
+# OS distribution package names
+# Redhat - openscap-scanner scap-security-guide wget bzip2
+# Ubuntu - python3-openscap wget bzip2
+
+# oval-security-scan uses the OVAL vulnerability and patch definitions
+# to audit for Common Vulnerabilities and Exposures (CVEs).
+# This tool uses Security Content Automation Protocol (SCAP) tool openscap
+# to scan a system for vulnerabilities. oval-security-scan can be used in
+# automation tools like ansible to automate the scaning of multiple systems.
+
+usage() {
+	printf "%s\n%s\n%s\n%s\n%s\n\n" \
+		"usage: ${0##*/} [-h] [-r] [-f filename]" \
+		" -h  - display usage." \
+		" -r  - view html report in browser." \
+		" -f  - OVAL file to test. If option not present," \
+		"       OVAL file will be automatically downloaded."
+	exit 1
+}
+
+print_error_exit() {
+	local _error_msg=${1}
+
+	printf "Error: %s.\n\n" \
+		"${_error_msg}"
+	exit 1
+}
+
+print_centos_message() {
+
+	printf "%s\n%s %s\n%s %s\n%s\n%s\n\n" \
+		"NOTE: CentOS doesn't produce official OVAL files." \
+		"The OVAL files are from a third party that have converted" \
+		"from the official" \
+		"Red Hat OVAL files. There may be some inconsistant results." \
+		"With the change"\
+		"to CentOS 8 Stream, you may find more issues." \
+		"See: https://github.com/OpenSCAP/openscap/issues/1661"
+}
+
+# Source OS information.
+if [ -f /etc/os-release ]; then
+	. /etc/os-release
+else
+	print_error_exit "Unsupported OS"
+fi
+
+HOSTNAME=$(hostname)
+TODAYS_DATE=$(date +%Y-%m-%d)
+REPORT_FILE="${HOSTNAME}-report-${TODAYS_DATE}"
+OPEN_REPORT="xdg-open"
+VIEW_REPORT=0
+META_DOWNLOAD=1
+
+case "${NAME}" in
+	Redhat*)
+		RELEASE="${VERSION_ID}"
+		META_DATA_URL="https://www.redhat.com/security/data/oval"
+		META_FILE="com.redhat.rhsa-RHEL${RELEASE}.xml"
+		FILE_EXT=".bz2"
+		;;
+	CentOS*)
+		RELEASE="${VERSION_ID}"
+		META_DATA_URL="https://github.com/Sep0lkit/oval-for-el/raw/master/centos"
+		META_FILE="com.redhat.rhsa-EL${RELEASE}.xml"
+		FILE_EXT=""
+		[ ${RELEASE} -eq 7 ] && OPEN_REPORT="gio open"
+		print_centos_message
+		;;
+	Ubuntu*)
+		RELEASE=$(lsb_release -cs)
+		META_DATA_URL="https://security-metadata.canonical.com/oval"
+		META_FILE="com.ubuntu.${RELEASE}.usn.oval.xml"
+		FILE_EXT=".bz2"
+		;;
+ 	Debian*)
+		RELEASE=$(lsb_release -cs)
+		META_DATA_URL="https://www.debian.org/security/oval"
+		META_FILE="oval-definitions-${RELEASE}.xml"
+		FILE_EXT=""
+		;;
+	*)
+		print_error_exit "unsupported OS version: ${NAME}"
+		;;
+esac
+
+while [ $# -ge 1 ]; do
+	case "${1}" in
+		-r)
+			VIEW_REPORT=1
+			;;
+        -f)
+			META_DATA_URL=""
+			META_FILE="${2}"
+			META_DOWNLOAD=0
+			shift
+			;;
+		-h|*)
+			usage
+            ;;
+    esac
+	shift
+done
+
+# Test that we have all the programs required installed.
+OSCAP="oscap"
+OSCAP_PATH=$(which "${OSCAP}")
+
+if [ X"${OSCAP_PATH}" = X"" ]; then
+
+	printf "%s %s\n%s\n\n" \
+		"Unable to find command:" \
+		"${OSCAP}" \
+		"Please install before trying again."
+	exit 1;
+fi
+
+BUNZIP="bunzip2"
+BUNZIP_PATH=$(which "${BUNZIP}")
+
+if [ X"${BUNZIP_PATH}" = X"" ]; then
+
+	printf "%s %s\n%s\n\n" \
+		"Unable to find command:" \
+		"${BUNZIP}" \
+		"Please install before trying again."
+	exit 1;
+fi
+
+WGET="wget"
+WGET_PATH=$(which "${WGET}")
+
+if [ X"${WGET_PATH}" = X"" ]; then
+
+	printf "%s %s\n%s\n\n" \
+		"Unable to find command:" \
+		"${WGET}" \
+		"Please install before trying again."
+	exit 1;
+fi
+
+if [ ${META_DOWNLOAD} -eq 1 ]; then
+	${WGET_PATH} -nc "${META_DATA_URL}/${META_FILE}${FILE_EXT}"
+fi
+
+if [ $? -eq 0 ]; then
+
+	if [ X"${FILE_EXT}" = X".bz2" ] && [ -f "${META_FILE}${FILE_EXT}" ]; then
+		${BUNZIP_PATH} -f "${META_FILE}${FILE_EXT}"
+	fi
+
+	if [ $? -eq 0 ]; then
+
+		${OSCAP_PATH} oval eval \
+			--report "${REPORT_FILE}.html" \
+			--results "${REPORT_FILE}.xml" \
+			"${META_FILE}"
+
+		if [ $? -eq 0 ]; then
+
+			if [ ${VIEW_REPORT} -eq 1 ]; then
+				${OPEN_REPORT} "${REPORT_FILE}.html" &
+			fi
+
+		else
+
+			print_error_exit "evaluating oval data report"
+		fi
+	else
+
+		print_error_exit "bunzip2 error: $!"
+	fi
+
+else
+
+	print_error_exit "Unable to download oval data"
+fi

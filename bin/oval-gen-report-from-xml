@@ -1,0 +1,108 @@
+#!/bin/sh
+
+# %BEGIN_COPYRIGHT%
+#
+# Copyright Ian McWilliam (kaosagnt@gmail.com).
+#
+# Permission to use, copy, modify, and distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+#
+# %END_COPYRIGHT%
+
+# This tool converts Security Content Automation Protocol (SCAP) openscap
+# xml report files to html for viewing in a browser.
+
+usage() {
+	printf "%s\n%s\n%s\n%s\n\n" \
+		"usage: ${0##*/} [-h] [-r] -f filename" \
+		" -h  - display usage." \
+		" -r  - view html report in browser." \
+		" -f  - XML OVAL report file to convert."
+	exit 1
+}
+
+print_error_exit() {
+	local _error_msg=${1}
+
+	printf "Error: %s.\n\n" \
+			"${_error_msg}"
+	exit 1
+}
+
+# Source OS information.
+if [ -f /etc/os-release ]; then
+	. /etc/os-release
+else
+	print_error_exit "Unsupported OS"
+fi
+
+REPORT_FILE=""
+OPEN_REPORT="xdg-open"
+VIEW_REPORT=0
+
+case "${NAME}" in
+	CentOS*)
+		[ ${VERSION_ID} -eq 7 ] && OPEN_REPORT="gio open"
+		;;
+esac
+
+while [ $# -ge 1 ]; do
+	case "${1}" in
+		-r)
+			VIEW_REPORT=1
+            ;;
+        -f)
+			REPORT_FILE="${2}"
+			shift
+			;;
+		-h|*)
+			usage
+			;;
+	esac
+	shift
+done
+
+# Test that we have all the programs required installed.
+OSCAP="oscap"
+OSCAP_PATH=$(which "${OSCAP}")
+
+if [ X"${OSCAP_PATH}" = X"" ]; then
+
+	printf "%s %s\n%s\n\n" \
+		"Unable to find command:" \
+		"${OSCAP}" \
+		"Please install before trying again."
+	exit 1;
+fi
+
+if [ -f "${REPORT_FILE}" ]; then
+
+	${OSCAP_PATH} oval generate report \
+		"${REPORT_FILE}" > "${REPORT_FILE}.html"
+
+	if [ $? -eq 0 ]; then
+
+		printf "Report: %s %s\n"\
+			"${REPORT_FILE}.html" \
+			"generated successfully."
+
+		if [ ${VIEW_REPORT} -eq 1 ]; then
+			${OPEN_REPORT} "${REPORT_FILE}.html" &
+		fi
+
+	else
+
+		print_error_exit "generating oval data report"
+	fi
+else
+	usage
+fi

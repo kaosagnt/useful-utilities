@@ -22,6 +22,15 @@ Most of the utilities will display debugging information by prepending the follo
 	ocsp-stapling-checker
 		Tests a host to see if OCSP Stapling is configured
 	
+	oval-gen-report-from-xml
+		Converts Security Content Automation Protocol (SCAP) openscap xml report files to html for viewing in a browser.
+
+	oval-security-scan
+		Uses the OVAL vulnerability and patch definitions to audit for Common Vulnerabilities and Exposures (CVEs).
+		This tool uses Security Content Automation Protocol (SCAP) tool openscap to scan a system for vulnerabilities.
+		oval-security-scan can be used in automation tools like ansible to automate the scaning of multiple systems.
+		Supports Red Hat / Debian / Ubuntu based Operating systems.
+
 	port-open-test
 		Test a host for an open TCP / UDP port. Requires Nmap to be installed.
 	
