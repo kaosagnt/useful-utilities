@@ -1,0 +1,145 @@
+#!/bin/sh
+
+# %BEGIN_COPYRIGHT%
+#
+# Copyright Ian McWilliam (kaosagnt@gmail.com).
+#
+# Permission to use, copy, modify, and distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+#
+# %END_COPYRIGHT%
+
+# Debug output off by default.
+# Enable with:
+# env DEBUG=1 extract-docker-image
+DEBUG=${DEBUG-0}
+
+usage() {
+	printf "%s\n %s\n %s\n %s\n %s\n\n" \
+		"usage: ${0##*/} docker_image_name [-f saved_docker_image]" \
+		"-h - usage." \
+		"-f - use an existing saved docker image file." \
+		"To enable debug output: " \
+		"env DEBUG=1 ${0##*/} docker_image_name [-f saved_docker_image]"
+	exit 1
+}
+
+print_error_exit() {
+	local _error_msg=${1}
+
+	printf "Error: %s.\n\n" \
+			"${_error_msg}"
+	exit 1
+}
+
+test_gzipped() {
+	local _filename="${1}"
+
+	gzip -t "${_filename}" 2>/dev/null
+
+	printf "%s" $?
+}
+
+extract_docker_image() {
+	local _image_name="${1}"
+	local _image_dir="${2}"
+	local _temp_dir="${3}"
+
+	# Debug
+	if [ ${DEBUG} -eq 1 ]; then
+		printf "name: %s\ndir: %s\ntemp: %s\n" \
+			"${_image_name}" \
+			"${_image_dir}" \
+			"${_temp_dir}"
+	fi
+
+	# The container image layers are in the _temp_dir directory
+	for image_layer in `find ${_temp_dir}/* -maxdepth 1 -type d`; do
+
+		if tar -tvf ${image_layer}/layer.tar | grep . > /dev/null; then
+			tar -xf ${image_layer}/layer.tar -C "${_image_dir}"
+		fi
+	done
+
+	rm -r "${_temp_dir}"
+}
+
+IMAGE_NAME="${1}"
+IMAGE_FILE=""
+
+[ -n "${IMAGE_NAME}" ] || usage
+
+shift
+
+while [ $# -ge 1 ]; do
+	case "${1}" in
+		-f)
+			IMAGE_FILE="${2}"
+			[ X"${IMAGE_FILE}" = X"" ] && usage
+			shift
+			;;
+		-h|*)
+			usage
+			;;
+	esac
+	shift
+done
+
+IMAGE_NAME_NC=$(echo "${IMAGE_NAME}" | sed -r 's/[:]|[\/]/-/g')
+IMAGE_DIR=$(mktemp -d docker-image-${IMAGE_NAME_NC}.XXXXXX)
+TEMP_DIR=$(mktemp -d docker-temp.XXXXXX)
+
+DOCKER="docker"
+DOCKER_PATH=$(which "${DOCKER}")
+
+if [ X"${DOCKER_PATH}" = X"" ]; then
+
+	printf "%s %s\n%s\n\n" \
+		"Unable to find command:" \
+		"${DOCKER}" \
+		"Please install before trying again."
+	exit 1;
+fi
+
+if [ X"${IMAGE_FILE}" != X"" ]; then
+	# Image file already saved.
+
+	TAR_FLAGS=""
+
+	# gzipped?
+	GZIPPED=$(test_gzipped "${IMAGE_FILE}")
+
+	if [ ${GZIPPED} -eq 0 ]; then
+
+		TAR_FLAGS="-z"
+	fi
+
+	tar -x ${TAR_FLAGS} -f "${IMAGE_FILE}" -C "${TEMP_DIR}"
+
+else
+
+	# Connect to the docker daemon and save the image to a file.
+	docker save "${IMAGE_NAME}" | tar -x -C "${TEMP_DIR}"
+fi
+if [ $? -eq 0 ]; then
+
+	# Extract the filesystem
+	extract_docker_image "${IMAGE_NAME}" "${IMAGE_DIR}" "${TEMP_DIR}"
+
+	printf "Image: %s extracted to %s\n" \
+			"${IMAGE_NAME}" \
+			"${IMAGE_DIR}"
+
+else
+
+	print_error_exit "$!"
+fi

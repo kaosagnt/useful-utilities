@@ -12,9 +12,16 @@ Most of the utilities will display debugging information by prepending the follo
 
 	convert-openssh-pk-to-SSH2-pk
 		Converts OpenSSH key files to SSH2 (PuTTY) format
-		
+	
 	convert-SSH2-pk-to-openssh-pk
 		Converts SSH2 (PuTTY) key files to OpenSSH format
+	
+	extract-docker-image
+		Extracts a Docker container image filesystem by either connecting to the Docker daemon
+		and saving the image, or from an existing saved Docker image file. The exisiting image file
+		may be gzipped. Allows one to easily access and save config files from images without having
+		to run the image and mount volumes. Can also be used to interrogate packages installed within
+		a container image.
 	
 	memcached-port-open-test
 		Test a host for open Memcached port (tcp / udp). Requires Nmap to be installed.
@@ -24,13 +31,13 @@ Most of the utilities will display debugging information by prepending the follo
 	
 	oval-gen-report-from-xml
 		Converts Security Content Automation Protocol (SCAP) openscap xml report files to html for viewing in a browser.
-
+	
 	oval-security-scan
 		Uses the OVAL vulnerability and patch definitions to audit for Common Vulnerabilities and Exposures (CVEs).
 		This tool uses Security Content Automation Protocol (SCAP) tool openscap to scan a system for vulnerabilities.
 		oval-security-scan can be used in automation tools like ansible to automate the scaning of multiple systems.
 		Supports Red Hat / Debian / Ubuntu based Operating systems.
-
+	
 	port-open-test
 		Test a host for an open TCP / UDP port. Requires Nmap to be installed.
 	
