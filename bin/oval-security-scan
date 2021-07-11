@@ -93,7 +93,7 @@ case "${NAME}" in
 		META_FILE="com.ubuntu.${RELEASE}.usn.oval.xml"
 		FILE_EXT=".bz2"
 		;;
- 	Debian*)
+	Debian*)
 		RELEASE=$(lsb_release -cs)
 		META_DATA_URL="https://www.debian.org/security/oval"
 		META_FILE="oval-definitions-${RELEASE}.xml"
@@ -109,7 +109,7 @@ while [ $# -ge 1 ]; do
 		-r)
 			VIEW_REPORT=1
 			;;
-        -f)
+		-f)
 			META_DATA_URL=""
 			META_FILE="${2}"
 			META_DOWNLOAD=0
@@ -117,8 +117,8 @@ while [ $# -ge 1 ]; do
 			;;
 		-h|*)
 			usage
-            ;;
-    esac
+			;;
+	esac
 	shift
 done
 

@@ -59,8 +59,8 @@ while [ $# -ge 1 ]; do
 	case "${1}" in
 		-r)
 			VIEW_REPORT=1
-            ;;
-        -f)
+			;;
+		-f)
 			REPORT_FILE="${2}"
 			shift
 			;;
