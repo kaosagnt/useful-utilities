@@ -1,5 +1,4 @@
-Useful Un*x / macOS utilities
------------------------------
+# Useful Un*x / macOS utilities
 
 A store of useful utilities that run under a Un*x like OS ie Linux / macOS / BSD.
 There will be some macOS specific ones as I find time to clean them up and add to the repository.
@@ -50,6 +49,11 @@ Most of the utilities will display debugging information by prepending the follo
 	tls-ssl-protocol-checker
 		Test a host to see which TLS / SSL protocols are enabled.
 		ie SSlv3, TLSv1.0, TLSv1.1, TLSv1.2, TLSv1.3
+
+## Static Code Analysis tools
+
+	control-flag
+		Docker build files for running ControlFlag code analysis in a container.
 
 
 TODO: finish this documentation.
