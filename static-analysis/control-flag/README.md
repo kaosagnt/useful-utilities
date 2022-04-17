@@ -27,7 +27,7 @@ You will aslo need to download the training data for the code under test.
 i.e C / PHP from [ControlFlag Github](https://github.com/IntelLabs/control-flag)
 website.
 
-The ControlFlag code is located at /control-flag/scripts/
+The ControlFlag code is located at /control-flag/scripts/  
 Once connected to the Docker container you can run commands like the following:
 
 	./scan_for_anomalies.sh -l 3 -t /development/code-projects/control-flag/php-data/php_controlflag_if_stmts.ts -o /development/code-projects/control-flag/scans/ -d /development/code-projects/websitebase/portal/portal_php/
