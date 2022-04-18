@@ -44,5 +44,5 @@ RUN git clone -v https://github.com/IntelLabs/control-flag.git \
 	&& make -j \
 	&& make test
 
-# docker-compose --no-cache build
+# docker-compose build --no-cache
 # docker-compose run --rm -v /${HOME}/development:/development cf /bin/tcsh

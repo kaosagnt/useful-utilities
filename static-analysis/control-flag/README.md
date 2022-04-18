@@ -12,7 +12,7 @@ then applies learned patterns to detect anomalous patterns in user's code.
 
 To build the Docker container from the static-analysis/control-flag directory:
 
-	docker-compose --no-cache build
+	docker-compose build --no-cache
 
 
 To run the Docker container:
