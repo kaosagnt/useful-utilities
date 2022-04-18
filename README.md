@@ -54,6 +54,9 @@ Most of the utilities will display debugging information by prepending the follo
 
 	control-flag
 		Docker build files for running ControlFlag code analysis in a container.
+	
+	phpstan
+		Docker build files for running PHPStan code analysis in a container.
 
 
 TODO: finish this documentation.
