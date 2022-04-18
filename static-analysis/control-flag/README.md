@@ -17,7 +17,7 @@ To build the Docker container from the static-analysis/control-flag directory:
 
 To run the Docker container:
 
-	docker-compose run --rm -v /${HOME}/development:/development cf /bin/tcsh
+	docker-compose run --rm -v ${HOME}/development:/development cf /bin/tcsh
 
 NOTE: the above will mount a volume from the current users development
 directory into the containter as /development. Change this to where the code
