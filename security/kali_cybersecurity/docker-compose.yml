@@ -1,0 +1,8 @@
+version: "3.8"
+
+services:
+  kcs:
+    restart: "no"
+    build: .
+    volumes:
+      - /cybersecurity:/cybersecurity
