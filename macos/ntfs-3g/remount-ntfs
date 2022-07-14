@@ -1,0 +1,114 @@
+#!/bin/sh
+
+# %BEGIN_COPYRIGHT%
+#
+# Copyright Ian McWilliam (kaosagnt@gmail.com).
+#
+# Permission to use, copy, modify, and distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+#
+# %END_COPYRIGHT%
+
+VOL_NAME=""
+MACOS=$(sw_vers -productVersion)
+MACOS="${MACOS%.*}"
+
+# Debug
+#printf "MacOS: %s \n" \
+#	"${MACOS}"
+
+no_ntfs_vol() {
+
+	printf "unable to find NTFS volume to remount\n\n"
+	exit 1
+}
+
+find_vol_name() {
+	local _device="${1}"
+	local _vol_name=""
+
+	# MacOS 12.4 (Monterey) mount shows lifs not ntfs
+	# mount will show ntfs://_disk/_vol_name
+
+	# Debug
+	#printf "device: %s\n" \
+	#	"${_device}" \
+
+	for _fs in 'ntfs' 'lifs'; do
+		
+		_vol_name=$(mount -t ${_fs} \
+				| grep -o '/Volumes/.*' \
+				| sed 's/ (.*)//g')
+
+		# Debug
+		#printf "_fs: %s\n_vol_name: %s\n\n" \
+		#	"${_fs}" \
+		#	"${_vol_name}"
+
+		if [ X"$_vol_name" != X"" ]; then
+			break
+		fi
+	done
+
+	VOL_NAME="$_vol_name"
+}
+
+DISK=$(diskutil list | grep -i 'Microsoft Basic Data' | grep -o 'disk.*')
+
+if [ X"${DISK}" = X"" ]; then
+
+	DISK=$(diskutil list \
+		| grep -i 'Windows_NTFS' \
+		| grep -o 'disk.*')
+fi
+
+if [ X"${DISK}" != X"" ]; then
+
+	DEVICE="/dev/${DISK}"
+
+	find_vol_name "${DEVICE}"
+
+	DISK_NAME=$(echo "${VOL_NAME}" | sed 's/\/Volumes\///g')
+
+	# Debug
+	#printf "%s\n%s\n%s\n%s\n\n" \
+	#	"${DISK}" \
+	#	"${DISK_NAME}" \
+	#	"${DEVICE}" \
+	#	"${VOL_NAME}"
+
+	if [ X"${VOL_NAME}" = X"" ]; then
+
+		no_ntfs_vol
+	else
+
+		printf "Trying to remount NTFS volume: %s\n\n" \
+			"${VOL_NAME}"
+
+		if [ ${MACOS} -le 11 ]; then
+
+			sudo umount "${DEVICE}"
+		else
+			# MacOS 12.4 (Monterey) mount shows lifs not ntfs
+			# mount will show ntfs://_disk/_vol_name
+
+			sudo umount "ntfs://${DISK}/${DISK_NAME}"
+		fi
+
+		sudo /usr/local/sbin/mount_ntfs "${DEVICE}" \
+			"${VOL_NAME}"
+
+	fi
+else
+
+	no_ntfs_vol
+fi

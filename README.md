@@ -50,6 +50,13 @@ Most of the utilities will display debugging information by prepending the follo
 		Test a host to see which TLS / SSL protocols are enabled.
 		ie SSlv3, TLSv1.0, TLSv1.1, TLSv1.2, TLSv1.3
 
+## macOS
+
+	ntfs-3g
+		remount-ntfs
+			A script to remount an NTFS volume as read / write.
+			By default macOS will mount all NTFS volumes as read only.
+
 ## Security
 
 	kali_cybersecurity
