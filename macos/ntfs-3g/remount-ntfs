@@ -21,6 +21,7 @@
 VOL_NAME=""
 MACOS=$(sw_vers -productVersion)
 MACOS="${MACOS%.*}"
+MACOS=$(printf "%.0f" ${MACOS})
 
 # Debug
 #printf "MacOS: %s \n" \
