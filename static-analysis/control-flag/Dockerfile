@@ -20,7 +20,7 @@
 # checks of C and PHP code.
 # https://github.com/IntelLabs/control-flag
 # 
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 MAINTAINER Ian McWilliam <kaosagnt@gmail.com>
 
 # - Update latest version Debs.
