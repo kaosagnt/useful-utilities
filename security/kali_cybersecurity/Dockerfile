@@ -28,7 +28,7 @@
 # container. This is a more secure setup as the SSH ports are not open
 # on the container.
 FROM kalilinux/kali-rolling
-MAINTAINER Ian McWilliam <kaosagnt@gmail.com>
+LABEL org.opencontainers.image.authors="Ian McWilliam <kaosagnt@gmail.com>"
 
 ENV DEBIAN_FRONTEND=noninteractive
 

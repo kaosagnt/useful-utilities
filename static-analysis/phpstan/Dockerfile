@@ -20,7 +20,7 @@
 # checks of PHP code.
 # 
 FROM ghcr.io/phpstan/phpstan:latest
-MAINTAINER Ian McWilliam <kaosagnt@gmail.com>
+LABEL org.opencontainers.image.authors="Ian McWilliam <kaosagnt@gmail.com>"
 
 # - Update latest version.
 # - Install extra cruft we need for this container.

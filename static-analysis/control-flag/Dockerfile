@@ -21,7 +21,7 @@
 # https://github.com/IntelLabs/control-flag
 # 
 FROM ubuntu:24.04
-MAINTAINER Ian McWilliam <kaosagnt@gmail.com>
+LABEL org.opencontainers.image.authors="Ian McWilliam <kaosagnt@gmail.com>"
 
 # - Update latest version Debs.
 # - Install extra cruft we need for this container.
