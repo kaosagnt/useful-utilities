@@ -95,7 +95,7 @@ if [ X"${DISK}" != X"" ]; then
 		printf "Trying to remount NTFS volume: %s\n\n" \
 			"${VOL_NAME}"
 
-		if [ ${MACOS} -le 11 ]; then
+		if [ "${MACOS}" -le 11 ] || [ "${MACOS}" -gt 12 ]; then
 
 			sudo umount "${DEVICE}"
 		else
